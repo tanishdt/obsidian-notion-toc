@@ -1,0 +1,138 @@
+/* Notion TOC: right-edge rail that expands into a heading sidebar */
+
+.nt-toc-host {
+  position: relative;
+}
+
+.nt-toc {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: var(--nt-right, 14px);
+  width: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.nt-toc.is-empty {
+  display: none;
+}
+
+/* ---------- Rail ---------- */
+
+.nt-toc-rail {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  max-height: 70%;
+  overflow: hidden;
+  padding: 10px 6px;
+  cursor: pointer;
+}
+
+.nt-toc-tick {
+  height: var(--nt-tick-h, 12px);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+}
+
+.nt-toc-tick::after {
+  content: '';
+  display: block;
+  width: 18px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--text-faint);
+  opacity: 0.55;
+  transition: background-color 0.15s ease, opacity 0.15s ease, width 0.15s ease;
+}
+
+.nt-toc-tick.nt-d-1::after { width: 12px; }
+.nt-toc-tick.nt-d-2::after { width: 8px; }
+.nt-toc-tick.nt-d-3::after { width: 6px; }
+
+.nt-toc-rail:hover .nt-toc-tick::after {
+  opacity: 0.8;
+}
+
+.nt-toc-tick.is-active::after {
+  background: var(--text-normal);
+  opacity: 1;
+}
+
+/* ---------- Sidebar panel ---------- */
+
+.nt-toc-panel {
+  position: absolute;
+  top: 50%;
+  right: -8px;
+  width: var(--nt-panel-width, 260px);
+  max-width: calc(100vw - 48px);
+  max-height: 70%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px 6px;
+  box-sizing: border-box;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-l);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translate(8px, -50%);
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0s linear 0.15s;
+}
+
+.nt-toc.is-open .nt-toc-panel {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translate(0, -50%);
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0s;
+}
+
+.nt-toc-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.nt-toc-item {
+  padding: 4px 8px 4px calc(8px + var(--nt-depth, 0) * 14px);
+  font-size: var(--font-ui-small);
+  line-height: 1.35;
+  color: var(--text-muted);
+  border-radius: var(--radius-s);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  user-select: none;
+}
+
+.nt-toc-item.is-top {
+  color: var(--text-normal);
+  font-weight: 500;
+}
+
+.nt-toc-item:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.nt-toc-item.is-active {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+  box-shadow: inset 2px 0 0 var(--text-accent);
+}
+
+@media print {
+  .nt-toc {
+    display: none;
+  }
+}
