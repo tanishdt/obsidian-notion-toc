@@ -28,6 +28,7 @@ Hover over the rail to smoothly expand the full table of contents with hierarchy
 
 ## ✨ Features
 
+- 🌊 **Smooth scroll gliding (v2)**: Clicking any heading or rail tick glides smoothly into view with an organic cubic ease-out curve. Animation duration dynamically adapts to hop distance, and any user scroll gesture (wheel, touch, or key) immediately cancels the glide.
 - 🎯 **Always visible, never in the way**: A minimalist tick rail pinned to the right edge. Ticks indicate relative heading levels (H1–H6) without consuming workspace width.
 - ⚡ **Hover to expand**: Hover anywhere on the rail to reveal the full table of contents sidebar.
 - 📍 **Live active section**: Real-time position tracking illuminates your current reading section on both the rail and the expanded sidebar.
@@ -102,6 +103,7 @@ Customize Notion TOC from **Settings → Community plugins → Notion TOC**:
 | **Sidebar width** | `260px` | Customize the flyout sidebar width. |
 | **Distance from right edge** | `14px` | Adjust rail offset (useful if you use a wide custom scrollbar). |
 | **Close delay** | `250ms` | Buffer time before the flyout dismisses after the mouse leaves. |
+| **Smooth scroll duration** | `400ms` | Maximum glide time to a clicked heading (0–1000ms). Set to `0` to jump instantly. |
 
 ---
 

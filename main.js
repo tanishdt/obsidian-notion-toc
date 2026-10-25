@@ -9,6 +9,7 @@ const DEFAULT_SETTINGS = {
   panelWidth: 260,
   closeDelay: 250,
   rightOffset: 14,
+  scrollDuration: 400,
 };
 
 /** Strip markdown syntax so headings read cleanly in the sidebar. */
@@ -32,6 +33,9 @@ class TocController {
     this.open = false;
     this.closeTimer = null;
     this.raf = null;
+    this.animRaf = null;
+    this.animating = false;
+    this.onUserScroll = () => this.cancelAnim();
 
     this.onScroll = () => {
       if (this.raf) return;
@@ -92,12 +96,23 @@ class TocController {
     this.host.classList.add('nt-toc-host');
     this.host.appendChild(this.root);
     this.host.addEventListener('scroll', this.onScroll, true);
+    this.host.addEventListener('wheel', this.onUserScroll, { passive: true, capture: true });
+    this.host.addEventListener('touchstart', this.onUserScroll, { passive: true, capture: true });
+    this.host.addEventListener('keydown', this.onUserScroll, true);
     document.addEventListener('pointerdown', this.onOutside, true);
+  }
+
+  detach() {
+    this.host.removeEventListener('scroll', this.onScroll, true);
+    this.host.removeEventListener('wheel', this.onUserScroll, true);
+    this.host.removeEventListener('touchstart', this.onUserScroll, true);
+    this.host.removeEventListener('keydown', this.onUserScroll, true);
+    document.removeEventListener('pointerdown', this.onOutside, true);
   }
 
   ensureAttached() {
     if (!this.root.isConnected || this.root.parentElement !== this.view.contentEl) {
-      this.host.removeEventListener('scroll', this.onScroll, true);
+      this.detach();
       this.attach();
     }
   }
@@ -181,7 +196,7 @@ class TocController {
   }
 
   updateActive() {
-    if (!this.headings.length) return;
+    if (!this.headings.length || this.animating) return;
     const line = this.currentLine();
     let idx = -1;
     for (let i = 0; i < this.headings.length; i++) {
@@ -215,17 +230,68 @@ class TocController {
     else if (bottom > p.scrollTop + p.clientHeight - 8) p.scrollTop = bottom - p.clientHeight + 8;
   }
 
+  cancelAnim() {
+    if (this.animRaf) cancelAnimationFrame(this.animRaf);
+    this.animRaf = null;
+    this.animating = false;
+  }
+
   jump(h) {
     if (!h) return;
     this.activeIdx = this.headings.indexOf(h);
     this.paintActive();
+    this.cancelAnim();
+
+    const moveCursor = () => {
+      try {
+        if (this.view.getMode() === 'source' && this.view.editor) {
+          this.view.editor.setCursor({ line: h.line, ch: 0 });
+        }
+      } catch (e) {
+        /* ignore */
+      }
+    };
+
     try {
       const mode = this.view.currentMode;
-      if (this.view.getMode() === 'source' && this.view.editor) {
-        this.view.editor.setCursor({ line: h.line, ch: 0 });
+      const target = h.line;
+      const start = mode.getScroll();
+      const dist = target - start;
+      const maxDuration = this.plugin.settings.scrollDuration;
+
+      // Smooth scrolling off, or already there: jump instantly.
+      if (!maxDuration || Math.abs(dist) < 0.5) {
+        moveCursor();
+        mode.applyScroll(target);
+        return;
       }
-      mode.applyScroll(h.line);
+
+      // Short hops are quick, long hops take up to the configured duration.
+      const duration = Math.min(maxDuration, 120 + Math.abs(dist) * 8);
+      const t0 = performance.now();
+      this.animating = true;
+
+      const step = (now) => {
+        const p = Math.max(0, Math.min(1, (now - t0) / duration));
+        const eased = 1 - Math.pow(1 - p, 3); // ease-out cubic
+        try {
+          mode.applyScroll(start + dist * eased);
+        } catch (e) {
+          this.cancelAnim();
+          return;
+        }
+        if (p < 1) {
+          this.animRaf = requestAnimationFrame(step);
+        } else {
+          this.animRaf = null;
+          this.animating = false;
+          moveCursor();
+          this.updateActive();
+        }
+      };
+      this.animRaf = requestAnimationFrame(step);
     } catch (e) {
+      this.cancelAnim();
       const file = this.view.file;
       if (file) this.view.leaf.openFile(file, { eState: { line: h.line } });
     }
@@ -234,8 +300,8 @@ class TocController {
   destroy() {
     clearTimeout(this.closeTimer);
     if (this.raf) cancelAnimationFrame(this.raf);
-    this.host.removeEventListener('scroll', this.onScroll, true);
-    document.removeEventListener('pointerdown', this.onOutside, true);
+    this.cancelAnim();
+    this.detach();
     this.host.classList.remove('nt-toc-host');
     this.root.remove();
   }
@@ -391,6 +457,16 @@ class NotionTocSettingTab extends PluginSettingTab {
       .addSlider((s) =>
         s.setLimits(0, 1000, 50).setValue(this.plugin.settings.closeDelay).setDynamicTooltip().onChange(async (v) => {
           this.plugin.settings.closeDelay = v;
+          await save();
+        })
+      );
+
+    new Setting(containerEl)
+      .setName('Smooth scroll duration')
+      .setDesc('Maximum time, in milliseconds, for the glide to a clicked heading. Set to 0 to jump instantly.')
+      .addSlider((s) =>
+        s.setLimits(0, 1000, 50).setValue(this.plugin.settings.scrollDuration).setDynamicTooltip().onChange(async (v) => {
+          this.plugin.settings.scrollDuration = v;
           await save();
         })
       );

@@ -1,9 +1,9 @@
 {
     "id":  "notion-toc",
     "name":  "Notion TOC",
-    "version":  "1.0.0",
+    "version":  "2.0.0",
     "minAppVersion":  "1.4.0",
-    "description":  "A Notion-style table of contents: a slim rail of ticks on the right edge of every note that expands into an indented heading sidebar on hover.",
+    "description":  "A Notion-style table of contents: a slim rail of ticks on the right edge of every note that expands into an indented heading sidebar on hover, with smooth scroll gliding.",
     "author":  "Tanish Vijay",
     "authorUrl":  "https://tanish.digital",
     "isDesktopOnly":  false
